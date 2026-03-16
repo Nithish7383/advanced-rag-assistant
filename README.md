@@ -272,11 +272,13 @@ Day 5
 
 ---
 
-# Upcoming Features
 
 Day 6
 
 * Chat interface for document interaction
+
+# Upcoming Features
+
 
 Future Improvements
 
