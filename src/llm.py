@@ -2,18 +2,17 @@ from langchain_community.llms import Ollama
 
 
 def load_llm():
-
     llm = Ollama(model="phi3:mini")
-
     return llm
 
 
-def generate_answer(query, docs):
+def stream_answer(query, docs):
 
     llm = load_llm()
 
     if not docs:
-        return "I could not find this information in the document.", []
+        yield "I could not find this information in the document."
+        return
 
     context = "\n\n".join([doc.page_content for doc in docs])
 
@@ -37,7 +36,11 @@ Question:
 Answer:
 """
 
-    response = llm.invoke(prompt)
+    for chunk in llm.stream(prompt):
+        yield chunk
+
+
+def extract_sources(docs):
 
     sources = []
 
@@ -48,6 +51,4 @@ Answer:
 
         sources.append((file_name, page))
 
-    sources = list(set(sources))
-
-    return response, sources
+    return list(set(sources))

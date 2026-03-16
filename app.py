@@ -5,8 +5,8 @@ import os
 from src.vector_store import load_vector_store, create_vector_store
 from src.pdf_loader import load_pdf
 from src.text_splitter import split_documents
-from src.llm import generate_answer
 from src.hybrid_retriever import HybridRetriever
+from src.llm import stream_answer, extract_sources
 
 
 st.set_page_config(page_title="Advanced RAG Assistant", layout="wide")
@@ -16,12 +16,11 @@ st.set_page_config(page_title="Advanced RAG Assistant", layout="wide")
 with st.sidebar:
 
     st.title("📄 Document AI Assistant")
-    st.write("Built with LangChain + FAISS + Phi-3 Mini")
 
     uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
 
-# Title
+# Main Title
 st.title("💬 Advanced RAG Assistant")
 
 
@@ -58,7 +57,6 @@ else:
 
         vector_store = load_vector_store()
 
-        # Load documents from FAISS
         documents = vector_store.similarity_search("test", k=50)
 
 
@@ -71,7 +69,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 
-# Display previous messages
+# Display chat history
 for message in st.session_state.messages:
 
     with st.chat_message(message["role"]):
@@ -97,40 +95,32 @@ if query:
 
         start_time = time.time()
 
-
         # Hybrid retrieval
         docs = retriever.retrieve(query, k=3)
 
+        # Streaming response
+        response = ""
 
-        response, sources = generate_answer(query, docs)
+        for token in stream_answer(query, docs):
 
+            response += token
+
+            placeholder.markdown(response + "▌")
+
+        placeholder.markdown(response)
 
         end_time = time.time()
 
         response_time = round(end_time - start_time, 2)
 
-
-        # Typing animation
-        full_response = ""
-
-        for word in response.split():
-
-            full_response += word + " "
-
-            time.sleep(0.02)
-
-            placeholder.markdown(full_response + "▌")
-
-        placeholder.markdown(full_response)
-
-
-        # Token metrics
         token_count = len(response.split())
 
         tokens_per_sec = round(token_count / response_time, 2) if response_time > 0 else 0
 
 
-        # Sources
+        # Extract sources
+        sources = extract_sources(docs)
+
         if sources:
 
             st.markdown("**Sources:**")
@@ -149,5 +139,5 @@ if query:
 
 
     st.session_state.messages.append(
-        {"role": "assistant", "content": full_response}
+        {"role": "assistant", "content": response}
     )
