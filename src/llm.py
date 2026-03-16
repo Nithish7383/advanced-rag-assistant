@@ -1,26 +1,20 @@
 from langchain_community.llms import Ollama
 
 
-# Load the local LLM (Phi-3 Mini)
+# Load local LLM
 def load_llm():
-
-    llm = Ollama(
-        model="phi3:mini"
-    )
-
+    llm = Ollama(model="phi3:mini")
     return llm
 
 
-# Generate answer using retrieved context
 def generate_answer(query, docs):
 
     llm = load_llm()
 
-    # If no documents found
     if not docs:
-        return "I could not find this information in the document."
+        return "I could not find this information in the document.", []
 
-    # Combine retrieved chunks
+    # Combine context
     context = "\n\n".join([doc.page_content for doc in docs])
 
     prompt = f"""
@@ -28,10 +22,8 @@ You are a document question-answering assistant.
 
 Use ONLY the provided context to answer the question.
 
-If the answer cannot be found in the context, respond with:
+If the answer cannot be found in the context, say:
 "I could not find this information in the document."
-
-Do NOT use outside knowledge.
 
 Context:
 {context}
@@ -44,4 +36,7 @@ Answer:
 
     response = llm.invoke(prompt)
 
-    return response
+    # Extract source pages
+    sources = list(set([doc.metadata.get("page", "Unknown") for doc in docs]))
+
+    return response, sources

@@ -1,9 +1,9 @@
 import streamlit as st
 import time
 from src.vector_store import load_vector_store
-from langchain_community.llms import Ollama
+from src.llm import generate_answer
 
-# Page config
+# Page configuration
 st.set_page_config(page_title="Advanced RAG Assistant", layout="wide")
 
 # Sidebar
@@ -14,12 +14,9 @@ with st.sidebar:
 # Title
 st.title("💬 Advanced RAG Assistant")
 
-# Load vector DB once
+# Load vector store
 with st.spinner("Loading knowledge base..."):
     vector_store = load_vector_store()
-
-# Load LLM
-llm = Ollama(model="phi3:mini")
 
 # Chat memory
 if "messages" not in st.session_state:
@@ -35,7 +32,6 @@ query = st.chat_input("Ask a question about your document")
 
 if query:
 
-    # Display user message
     with st.chat_message("user"):
         st.markdown(query)
 
@@ -43,33 +39,25 @@ if query:
         {"role": "user", "content": query}
     )
 
-    # Assistant response
     with st.chat_message("assistant"):
 
         placeholder = st.empty()
 
-        # Show thinking indicator
         placeholder.markdown("🤖 Thinking...")
 
-        # Retrieve docs
+        # Start timer
+        start_time = time.time()
+
+        # Retrieve documents
         docs = vector_store.similarity_search(query, k=2)
 
-        context = "\n\n".join([doc.page_content for doc in docs])
+        # Generate answer
+        response, sources = generate_answer(query, docs)
 
-        prompt = f"""
-You are an AI assistant answering questions using the document context.
+        # End timer
+        end_time = time.time()
 
-Context:
-{context}
-
-Question:
-{query}
-
-Answer clearly and briefly.
-"""
-
-        # Generate response
-        response = llm.invoke(prompt)
+        response_time = round(end_time - start_time, 2)
 
         # Typing animation
         full_response = ""
@@ -79,6 +67,22 @@ Answer clearly and briefly.
             placeholder.markdown(full_response + "▌")
 
         placeholder.markdown(full_response)
+
+        # Token estimation
+        token_count = len(response.split())
+        tokens_per_sec = round(token_count / response_time, 2) if response_time > 0 else 0
+
+        # Show sources
+        if sources:
+            st.markdown("**Sources:**")
+            for page in sources:
+                st.markdown(f"- Page {page}")
+
+        # Performance metrics
+        st.markdown("---")
+        st.markdown(f"⏱️ **Response Time:** {response_time} seconds")
+        st.markdown(f"🔢 **Tokens Generated:** {token_count}")
+        st.markdown(f"⚡ **Tokens/sec:** {tokens_per_sec}")
 
     st.session_state.messages.append(
         {"role": "assistant", "content": full_response}
