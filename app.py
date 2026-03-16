@@ -7,6 +7,7 @@ from src.vector_store import load_vector_store, create_vector_store
 from src.pdf_loader import load_pdf
 from src.text_splitter import split_documents
 from src.hybrid_retriever import HybridRetriever
+from src.reranker import Reranker
 from src.llm import stream_answer, extract_sources
 
 
@@ -44,7 +45,6 @@ with st.sidebar:
                 st.rerun()
 
     else:
-
         st.write("No documents uploaded.")
 
     st.markdown("---")
@@ -92,7 +92,6 @@ if uploaded_file:
 
     st.success("Document processed successfully!")
 
-
 else:
 
     with st.spinner("Loading knowledge base..."):
@@ -104,6 +103,9 @@ else:
 
 # Hybrid Retriever
 retriever = HybridRetriever(vector_store, documents)
+
+# Reranker
+reranker = Reranker()
 
 
 # Chat memory
@@ -142,8 +144,11 @@ if query:
 
         start_time = time.time()
 
-        # Hybrid retrieval
-        docs = retriever.retrieve(query, k=3)
+        # Retrieve more chunks
+        retrieved_docs = retriever.retrieve(query, k=10)
+
+        # Re-rank them
+        docs = reranker.rerank(query, retrieved_docs, top_k=3)
 
         response = ""
 
