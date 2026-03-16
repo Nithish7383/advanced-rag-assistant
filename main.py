@@ -2,56 +2,52 @@ from src.pdf_loader import load_pdf
 from src.text_splitter import split_documents
 from src.vector_store import create_vector_store
 from src.retriever import search_documents
+from src.llm import generate_answer
 
 
 def main():
 
     print("Loading document...")
-
     docs = load_pdf("data/sample.pdf")
 
-
     print("Splitting document into chunks...")
-
     chunks = split_documents(docs)
 
-
     print("Creating vector database...")
-
     vector_store = create_vector_store(chunks)
 
-    print("Vector database created successfully")
-
+    print("Vector database ready")
     print("Total chunks stored:", len(chunks))
 
 
     while True:
 
-        query = input("\nEnter your question about the document (or type 'exit'): ")
+        query = input("\nAsk a question about the document (type 'exit' to quit): ")
 
         if query.lower() == "exit":
-            print("Exiting search system.")
+            print("Goodbye.")
             break
 
+
+        print("\nSearching document...\n")
 
         results = search_documents(vector_store, query)
 
 
-        print("\nTop relevant results:\n")
+        print("Generating answer with Mistral...\n")
+
+        answer = generate_answer(query, results)
+
+        print("AI Answer:\n")
+        print(answer)
 
 
-        for i, doc in enumerate(results):
+        print("\nSources:\n")
 
-            print(f"Result {i+1}")
-            print("-" * 40)
-
-            print("Answer context:")
-            print(doc.page_content[:400])
-
-            print("\nSource:", doc.metadata["source"])
-            print("Page:", doc.metadata["page"] + 1)
-
-            print("\n")
+        for doc in results:
+            print(
+                f"Page {doc.metadata['page'] + 1} | {doc.metadata['source']}"
+            )
 
 
 if __name__ == "__main__":

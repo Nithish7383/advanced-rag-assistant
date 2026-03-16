@@ -162,13 +162,6 @@ This metadata is used later to provide **document citations in AI responses**.
 
 ---
 
-Day-3
-
-- Implemented semantic similarity search
-- Added query-based document retrieval
-- Integrated FAISS similarity search
-- Enabled metadata-based source tracing
-
 # Setup Instructions
 
 ## Clone Repository
@@ -225,13 +218,18 @@ Day 2
 - Embedding generation
 - FAISS vector database integration
 
-### Upcoming
-
-Day 3
-- Semantic similarity search
+Day-3
+- Implemented semantic similarity search
+- Added query-based document retrieval
+- Integrated FAISS similarity search
+- Enabled metadata-based source tracing
 
 Day 4
-- LLM integration (Mistral)
+- Integrated local Mistral LLM using Ollama
+- Implemented answer generation from retrieved document context
+- Built full Retrieval-Augmented Generation pipeline
+
+### Upcoming
 
 Day 5
 - Retrieval-Augmented question answering
