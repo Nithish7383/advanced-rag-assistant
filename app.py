@@ -1,6 +1,10 @@
 import streamlit as st
 import time
-from src.vector_store import load_vector_store
+import os
+
+from src.vector_store import load_vector_store, create_vector_store
+from src.pdf_loader import load_pdf
+from src.text_splitter import split_documents
 from src.llm import generate_answer
 
 # Page configuration
@@ -11,12 +15,35 @@ with st.sidebar:
     st.title("📄 Document AI Assistant")
     st.write("Built with LangChain + FAISS + Phi-3 Mini")
 
+    uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
+
 # Title
 st.title("💬 Advanced RAG Assistant")
 
-# Load vector store
-with st.spinner("Loading knowledge base..."):
-    vector_store = load_vector_store()
+vector_store = None
+
+# Handle uploaded PDF
+if uploaded_file:
+
+    os.makedirs("uploaded_docs", exist_ok=True)
+    file_path = os.path.join("uploaded_docs", uploaded_file.name)
+
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+
+    with st.spinner("Processing document..."):
+
+        documents = load_pdf(file_path)
+        chunks = split_documents(documents)
+
+        vector_store = create_vector_store(chunks)
+
+    st.success("Document processed successfully!")
+
+else:
+
+    with st.spinner("Loading existing knowledge base..."):
+        vector_store = load_vector_store()
 
 # Chat memory
 if "messages" not in st.session_state:
@@ -35,31 +62,23 @@ if query:
     with st.chat_message("user"):
         st.markdown(query)
 
-    st.session_state.messages.append(
-        {"role": "user", "content": query}
-    )
+    st.session_state.messages.append({"role": "user", "content": query})
 
     with st.chat_message("assistant"):
 
         placeholder = st.empty()
-
         placeholder.markdown("🤖 Thinking...")
 
-        # Start timer
         start_time = time.time()
 
-        # Retrieve documents
         docs = vector_store.similarity_search(query, k=2)
 
-        # Generate answer
         response, sources = generate_answer(query, docs)
 
-        # End timer
         end_time = time.time()
 
         response_time = round(end_time - start_time, 2)
 
-        # Typing animation
         full_response = ""
         for word in response.split():
             full_response += word + " "
@@ -68,17 +87,14 @@ if query:
 
         placeholder.markdown(full_response)
 
-        # Token estimation
         token_count = len(response.split())
         tokens_per_sec = round(token_count / response_time, 2) if response_time > 0 else 0
 
-        # Show sources
         if sources:
             st.markdown("**Sources:**")
             for page in sources:
                 st.markdown(f"- Page {page}")
 
-        # Performance metrics
         st.markdown("---")
         st.markdown(f"⏱️ **Response Time:** {response_time} seconds")
         st.markdown(f"🔢 **Tokens Generated:** {token_count}")

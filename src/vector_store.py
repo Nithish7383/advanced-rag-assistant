@@ -1,9 +1,9 @@
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
+import os
 import streamlit as st
 
 
-# Load embedding model
 @st.cache_resource
 def get_embeddings():
     return HuggingFaceEmbeddings(
@@ -11,21 +11,30 @@ def get_embeddings():
     )
 
 
-# Create vector store from document chunks
 def create_vector_store(chunks):
 
     embeddings = get_embeddings()
 
-    vector_store = FAISS.from_documents(chunks, embeddings)
+    # If FAISS already exists, load and append
+    if os.path.exists("faiss_index"):
+
+        vector_store = FAISS.load_local(
+            "faiss_index",
+            embeddings,
+            allow_dangerous_deserialization=True
+        )
+
+        vector_store.add_documents(chunks)
+
+    else:
+
+        vector_store = FAISS.from_documents(chunks, embeddings)
 
     vector_store.save_local("faiss_index")
-
-    print("Vector database created successfully")
 
     return vector_store
 
 
-# Load existing vector store
 @st.cache_resource
 def load_vector_store():
 
