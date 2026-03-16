@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 import os
+import shutil
 
 from src.vector_store import load_vector_store, create_vector_store
 from src.pdf_loader import load_pdf
@@ -18,6 +19,47 @@ with st.sidebar:
     st.title("📄 Document AI Assistant")
 
     uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
+
+    st.markdown("---")
+    st.subheader("📂 Uploaded Documents")
+
+    os.makedirs("uploaded_docs", exist_ok=True)
+
+    files = os.listdir("uploaded_docs")
+
+    if files:
+
+        for file in files:
+
+            col1, col2 = st.columns([4,1])
+
+            col1.write(file)
+
+            if col2.button("❌", key=file):
+
+                os.remove(os.path.join("uploaded_docs", file))
+
+                st.success(f"{file} deleted")
+
+                st.rerun()
+
+    else:
+
+        st.write("No documents uploaded.")
+
+    st.markdown("---")
+
+    if st.button("Reset Knowledge Base"):
+
+        if os.path.exists("faiss_index"):
+            shutil.rmtree("faiss_index")
+
+        if os.path.exists("uploaded_docs"):
+            shutil.rmtree("uploaded_docs")
+
+        st.success("Knowledge base cleared")
+
+        st.rerun()
 
 
 # Main Title
@@ -50,6 +92,7 @@ if uploaded_file:
 
     st.success("Document processed successfully!")
 
+
 else:
 
     with st.spinner("Loading knowledge base..."):
@@ -59,7 +102,7 @@ else:
         documents = vector_store.similarity_search("test", k=50)
 
 
-# Create Hybrid Retriever
+# Hybrid Retriever
 retriever = HybridRetriever(vector_store, documents)
 
 
@@ -83,7 +126,6 @@ query = st.chat_input("Ask a question about your document")
 
 if query:
 
-    # Show user message
     with st.chat_message("user"):
         st.markdown(query)
 
