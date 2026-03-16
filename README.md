@@ -162,6 +162,13 @@ This metadata is used later to provide **document citations in AI responses**.
 
 ---
 
+Day-3
+
+- Implemented semantic similarity search
+- Added query-based document retrieval
+- Integrated FAISS similarity search
+- Enabled metadata-based source tracing
+
 # Setup Instructions
 
 ## Clone Repository
