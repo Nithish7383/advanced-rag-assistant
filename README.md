@@ -26,7 +26,7 @@ This project implements the **first stages of a scalable RAG system.**
 # Architecture
 
 
-Document (PDF)
+PDF Document
 │
 ▼
 LangChain PDF Loader
@@ -38,7 +38,7 @@ Recursive Text Splitter
 Text Chunks
 │
 ▼
-Embedding Model
+Embedding Model (Sentence Transformers)
 │
 ▼
 Vector Database (FAISS)
@@ -61,15 +61,16 @@ Final AI Response
 advanced-rag-assistant
 │
 ├── data
-│ └── sample.pdf # Example document
+│ └── sample.pdf
 │
 ├── src
-│ ├── pdf_loader.py # PDF document loader
-│ └── text_splitter.py # Text chunking logic
+│ ├── pdf_loader.py
+│ ├── text_splitter.py
+│ └── vector_store.py
 │
-├── main.py # Entry point of the application
-├── requirements.txt # Project dependencies
-└── README.md # Project documentation
+├── main.py
+├── requirements.txt
+└── README.md
 
 
 ---
@@ -103,13 +104,61 @@ This project is designed to integrate with local models such as:
 
 ---
 
-# Features Implemented
+# Current Capabilities
 
-- PDF document loading
-- Recursive text chunking
-- Modular code architecture
-- Clean project structure for GenAI systems
-- Foundation for vector search
+The system currently implements the **core stages of a Retrieval-Augmented Generation (RAG) pipeline**.
+
+### Implemented Pipeline
+
+
+PDF Document
+↓
+LangChain PDF Loader
+↓
+Recursive Text Splitter
+↓
+Semantic Text Chunks
+↓
+Embedding Generation
+↓
+Vector Database (FAISS)
+
+
+### What Happens Internally
+
+1. The system loads a PDF document using LangChain's `PyPDFLoader`.
+2. The document is split into smaller semantic chunks using `RecursiveCharacterTextSplitter`.
+3. Each chunk is converted into vector embeddings using the `all-MiniLM-L6-v2` embedding model.
+4. The embeddings are stored in a **FAISS vector database** for semantic similarity search.
+
+### Example Output
+
+
+Loading document...
+Splitting document into chunks...
+Creating vector database...
+Vector database created successfully
+Total chunks stored: 16
+
+
+---
+
+# Metadata Extraction
+
+Each chunk of text retains metadata extracted from the original PDF document.
+
+Example metadata:
+
+
+{
+'source': 'data/sample.pdf',
+'page': 1,
+'total_pages': 7,
+'author': 'ashwin kumar m'
+}
+
+
+This metadata is used later to provide **document citations in AI responses**.
 
 ---
 
@@ -131,9 +180,7 @@ cd advanced-rag-assistant
 python -m venv venv
 
 
-Activate it:
-
-Windows
+Activate it (Windows):
 
 
 venv\Scripts\activate
@@ -155,56 +202,45 @@ pip install -r requirements.txt
 python main.py
 
 
-Example Output
+---
 
+# Development Progress
 
-Total chunks: 16
+This repository is being built incrementally as part of a **GenAI engineering portfolio project**.
 
-Enterprise Email Automation
-Proposal — Outlook
-Limitation, Proof, and Azure
-Logic Apps Solution
+### Completed
 
+Day 1
+- Document ingestion
+- Text chunking
+
+Day 2
+- Embedding generation
+- FAISS vector database integration
+
+### Upcoming
+
+Day 3
+- Semantic similarity search
+
+Day 4
+- LLM integration (Mistral)
+
+Day 5
+- Retrieval-Augmented question answering
+
+Day 6
+- Chat interface for document interaction
 
 ---
 
-# Current Pipeline
+# Learning Goals
 
-The current system performs the following steps:
-
-
-PDF Document
-↓
-Load document using LangChain
-↓
-Split document into semantic chunks
-↓
-Prepare chunks for embedding generation
-
-
----
-
-# Next Development Steps
-
-Planned improvements:
-
-- Add embedding generation
-- Implement FAISS vector database
-- Add semantic retrieval
-- Connect to local LLM (Mistral)
-- Implement question-answering interface
-- Add document citation support
-- Build chat-based UI
-
----
-
-# Learning Objectives
-
-This project is part of a **GenAI engineering portfolio**, focusing on building real-world AI systems such as:
+This project focuses on building real-world **GenAI engineering systems** such as:
 
 - Retrieval-Augmented Generation (RAG)
 - AI knowledge assistants
-- Document search systems
+- Semantic document search
 - Local LLM applications
 
 ---
@@ -214,7 +250,7 @@ This project is part of a **GenAI engineering portfolio**, focusing on building 
 **Nithish**
 
 GenAI Engineer  
-AI Systems • LLM Applications • RAG Pipelines
+LLM Applications • RAG Systems • AI Automation
 
 GitHub  
 https://github.com/Nithish7383
