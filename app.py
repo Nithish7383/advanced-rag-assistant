@@ -92,8 +92,8 @@ if query:
 
         if sources:
             st.markdown("**Sources:**")
-            for page in sources:
-                st.markdown(f"- Page {page}")
+            for file_name, page in sources:
+                st.markdown(f"- {file_name} — Page {page}")
 
         st.markdown("---")
         st.markdown(f"⏱️ **Response Time:** {response_time} seconds")
