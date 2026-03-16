@@ -6,7 +6,7 @@ def load_llm():
     return llm
 
 
-def stream_answer(query, docs):
+def stream_answer(query, docs, history):
 
     llm = load_llm()
 
@@ -16,16 +16,20 @@ def stream_answer(query, docs):
 
     context = "\n\n".join([doc.page_content for doc in docs])
 
+    conversation = "\n".join(history)
+
     prompt = f"""
 You are a document question answering system.
 
-Answer ONLY using the information provided in the context below.
+Use the conversation history and the context to answer the question.
 
-If the answer is not present in the context, respond exactly with:
+Answer ONLY using the provided context.
 
+If the answer is not present in the context say:
 "I could not find this information in the document."
 
-Do NOT use any external knowledge.
+Conversation History:
+{conversation}
 
 Context:
 {context}

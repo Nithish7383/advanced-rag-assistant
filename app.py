@@ -50,7 +50,6 @@ if uploaded_file:
 
     st.success("Document processed successfully!")
 
-
 else:
 
     with st.spinner("Loading knowledge base..."):
@@ -68,6 +67,9 @@ retriever = HybridRetriever(vector_store, documents)
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "history" not in st.session_state:
+    st.session_state.history = []
+
 
 # Display chat history
 for message in st.session_state.messages:
@@ -81,10 +83,13 @@ query = st.chat_input("Ask a question about your document")
 
 if query:
 
+    # Show user message
     with st.chat_message("user"):
         st.markdown(query)
 
-    st.session_state.messages.append({"role": "user", "content": query})
+    st.session_state.messages.append(
+        {"role": "user", "content": query}
+    )
 
 
     with st.chat_message("assistant"):
@@ -98,10 +103,10 @@ if query:
         # Hybrid retrieval
         docs = retriever.retrieve(query, k=3)
 
-        # Streaming response
         response = ""
 
-        for token in stream_answer(query, docs):
+        # Streaming response
+        for token in stream_answer(query, docs, st.session_state.history):
 
             response += token
 
@@ -116,6 +121,11 @@ if query:
         token_count = len(response.split())
 
         tokens_per_sec = round(token_count / response_time, 2) if response_time > 0 else 0
+
+
+        # Save conversation history
+        st.session_state.history.append(f"User: {query}")
+        st.session_state.history.append(f"Assistant: {response}")
 
 
         # Extract sources
