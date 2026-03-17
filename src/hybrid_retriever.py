@@ -4,79 +4,80 @@ from rank_bm25 import BM25Okapi
 class HybridRetriever:
 
     def __init__(self, vector_store, documents):
-        """
-        vector_store : FAISS vector database
-        documents    : list of document chunks
-        """
 
         self.vector_store = vector_store
-        self.documents = documents
+        self.documents = documents if documents else []
 
-        # Prepare corpus for BM25
-        corpus = [doc.page_content.split() for doc in documents]
-
-        self.bm25 = BM25Okapi(corpus)
-
-        # Store debug info
+        # debug storage
         self.last_vector_results = []
         self.last_bm25_results = []
         self.last_combined_results = []
 
+        # Build BM25 safely
+        if self.documents and len(self.documents) > 0:
+
+            corpus = []
+
+            for doc in self.documents:
+                text = doc.page_content.strip()
+
+                if text:
+                    corpus.append(text.split())
+
+            if len(corpus) > 0:
+                self.bm25 = BM25Okapi(corpus)
+            else:
+                self.bm25 = None
+
+        else:
+            self.bm25 = None
+
 
     def retrieve(self, query, k=4):
-        """
-        Hybrid retrieval using
-        1. Vector search (FAISS)
-        2. Keyword search (BM25)
 
-        Returns final merged results but also stores
-        intermediate retrieval results for debugging.
-        """
+        if not self.vector_store:
+            return []
 
-        # ---------- Vector Search ----------
+        # vector search
         vector_results = self.vector_store.similarity_search(query, k=2)
 
-        # Save for debug panel
         self.last_vector_results = vector_results
 
+        keyword_results = []
 
-        # ---------- BM25 Keyword Search ----------
-        tokenized_query = query.split()
+        # BM25 search only if initialized
+        if self.bm25:
 
-        bm25_scores = self.bm25.get_scores(tokenized_query)
+            tokenized_query = query.split()
 
-        top_indices = sorted(
-            range(len(bm25_scores)),
-            key=lambda i: bm25_scores[i],
-            reverse=True
-        )[:2]
+            bm25_scores = self.bm25.get_scores(tokenized_query)
 
-        keyword_results = [self.documents[i] for i in top_indices]
+            top_indices = sorted(
+                range(len(bm25_scores)),
+                key=lambda i: bm25_scores[i],
+                reverse=True
+            )[:2]
 
-        # Save for debug panel
+            keyword_results = [self.documents[i] for i in top_indices]
+
         self.last_bm25_results = keyword_results
 
-
-        # ---------- Merge Results ----------
+        # combine
         results = vector_results + keyword_results
 
-
-        # ---------- Remove Duplicates ----------
         unique_results = []
         seen = set()
 
         for doc in results:
+
             content = doc.page_content
 
             if content not in seen:
                 unique_results.append(doc)
                 seen.add(content)
 
-
         final_results = unique_results[:k]
 
-        # Save final merged results
         self.last_combined_results = final_results
-
 
         return final_results
