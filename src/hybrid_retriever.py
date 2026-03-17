@@ -17,18 +17,30 @@ class HybridRetriever:
 
         self.bm25 = BM25Okapi(corpus)
 
+        # Store debug info
+        self.last_vector_results = []
+        self.last_bm25_results = []
+        self.last_combined_results = []
+
 
     def retrieve(self, query, k=4):
         """
         Hybrid retrieval using
         1. Vector search (FAISS)
         2. Keyword search (BM25)
+
+        Returns final merged results but also stores
+        intermediate retrieval results for debugging.
         """
 
-        # Vector search
+        # ---------- Vector Search ----------
         vector_results = self.vector_store.similarity_search(query, k=2)
 
-        # BM25 keyword search
+        # Save for debug panel
+        self.last_vector_results = vector_results
+
+
+        # ---------- BM25 Keyword Search ----------
         tokenized_query = query.split()
 
         bm25_scores = self.bm25.get_scores(tokenized_query)
@@ -41,10 +53,15 @@ class HybridRetriever:
 
         keyword_results = [self.documents[i] for i in top_indices]
 
-        # Merge results
+        # Save for debug panel
+        self.last_bm25_results = keyword_results
+
+
+        # ---------- Merge Results ----------
         results = vector_results + keyword_results
 
-        # Remove duplicates
+
+        # ---------- Remove Duplicates ----------
         unique_results = []
         seen = set()
 
@@ -55,4 +72,11 @@ class HybridRetriever:
                 unique_results.append(doc)
                 seen.add(content)
 
-        return unique_results[:k]
+
+        final_results = unique_results[:k]
+
+        # Save final merged results
+        self.last_combined_results = final_results
+
+
+        return final_results

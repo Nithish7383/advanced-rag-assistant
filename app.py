@@ -144,10 +144,10 @@ if query:
 
         start_time = time.time()
 
-        # Retrieve more chunks
+        # Retrieve chunks
         retrieved_docs = retriever.retrieve(query, k=10)
 
-        # Re-rank them
+        # Re-rank
         docs = reranker.rerank(query, retrieved_docs, top_k=3)
 
         response = ""
@@ -193,6 +193,36 @@ if query:
         st.markdown(f"🔢 **Tokens Generated:** {token_count}")
 
         st.markdown(f"⚡ **Tokens/sec:** {tokens_per_sec}")
+
+        with st.expander("📄 Context Sent to LLM"):
+
+            for i, doc in enumerate(docs):
+
+                st.markdown(f"**Chunk {i+1}**")
+
+                st.markdown(doc.page_content)
+    
+                st.markdown("---")
+        # 🔎 Retrieval Debug Panel
+        with st.expander("🔎 Retrieval Debug Panel"):
+
+            st.subheader("Vector Search Results")
+
+            for doc in retriever.last_vector_results:
+                st.markdown(doc.page_content[:300])
+                st.markdown("---")
+
+            st.subheader("BM25 Keyword Results")
+
+            for doc in retriever.last_bm25_results:
+                st.markdown(doc.page_content[:300])
+                st.markdown("---")
+
+            st.subheader("Final Hybrid Results")
+
+            for doc in retriever.last_combined_results:
+                st.markdown(doc.page_content[:300])
+                st.markdown("---")
 
 
     st.session_state.messages.append(
