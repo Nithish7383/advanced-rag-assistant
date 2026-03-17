@@ -9,7 +9,7 @@ from src.text_splitter import split_documents
 from src.hybrid_retriever import HybridRetriever
 from src.reranker import Reranker
 from src.llm import stream_answer, extract_sources
-
+from src.summarizer import generate_summary
 
 st.set_page_config(page_title="Advanced RAG Assistant", layout="wide")
 
@@ -90,7 +90,13 @@ if uploaded_file:
 
         vector_store = create_vector_store(chunks)
 
+        summary = generate_summary(chunks)
+
     st.success("Document processed successfully!")
+
+    st.markdown("### 📄 Document Insights")
+
+    st.markdown(summary)
 
 else:
 
