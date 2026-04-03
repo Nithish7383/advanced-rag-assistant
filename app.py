@@ -8,7 +8,7 @@ from src.pdf_loader import load_pdf
 from src.text_splitter import split_documents
 from src.hybrid_retriever import HybridRetriever
 from src.reranker import Reranker
-from src.llm import stream_answer, extract_sources
+from src.llm import stream_answer, extract_sources, AVAILABLE_MODELS
 from src.summarizer import generate_summary
 
 
@@ -35,7 +35,6 @@ button[data-testid="baseButton-secondary"] {
     width: 34px;
     font-size: 14px;
 }
-
 button[kind="secondary"] {
     width: auto !important;
 }
@@ -52,49 +51,43 @@ with st.sidebar:
     st.title("📄 Document AI Assistant")
 
     st.markdown("### Upload Document")
-
     uploaded_file = st.file_uploader("", type="pdf")
+
+    st.markdown("---")
+
+    # MODEL SELECTOR
+    st.subheader("🤖 Model")
+    selected_model_name = st.selectbox("Choose Model", list(AVAILABLE_MODELS.keys()))
+    selected_model = AVAILABLE_MODELS[selected_model_name]
 
     st.markdown("---")
 
     st.subheader("📂 Knowledge Base")
 
     os.makedirs("uploaded_docs", exist_ok=True)
-
     files = os.listdir("uploaded_docs")
-
     st.caption(f"{len(files)} document(s) loaded")
 
     if files:
-
         for file in files:
-
-            col1, col2 = st.columns([9,1])
-
+            col1, col2 = st.columns([9, 1])
             with col1:
                 st.markdown(f"📄 **{file}**")
-
             with col2:
                 if st.button("🗑", key=f"delete_{file}"):
-
                     os.remove(os.path.join("uploaded_docs", file))
                     st.rerun()
-
             st.markdown("---")
-
     else:
         st.write("No documents uploaded.")
 
     st.markdown("---")
 
     if st.button("🔄 Reset Knowledge Base", use_container_width=True):
-
         if os.path.exists("faiss_index"):
             shutil.rmtree("faiss_index")
-
         if os.path.exists("uploaded_docs"):
             shutil.rmtree("uploaded_docs")
-
         st.success("Knowledge base cleared")
         st.rerun()
 
@@ -104,7 +97,6 @@ with st.sidebar:
 # =========================
 
 st.title("💬 Advanced RAG Assistant")
-
 st.write("Ask questions about your uploaded documents.")
 
 
@@ -119,22 +111,16 @@ summary = None
 if uploaded_file:
 
     os.makedirs("uploaded_docs", exist_ok=True)
-
     file_path = os.path.join("uploaded_docs", uploaded_file.name)
 
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
     with st.spinner("Processing document..."):
-
         docs = load_pdf(file_path)
-
         chunks = split_documents(docs)
-
         documents = chunks
-
         vector_store = create_vector_store(chunks)
-
         summary = generate_summary(chunks)
 
     st.success("Document processed successfully!")
@@ -142,9 +128,7 @@ if uploaded_file:
 else:
 
     with st.spinner("Loading knowledge base..."):
-
         vector_store = load_vector_store()
-
         if vector_store:
             documents = vector_store.similarity_search("test", k=50)
         else:
@@ -156,7 +140,6 @@ else:
 # =========================
 
 retriever = HybridRetriever(vector_store, documents)
-
 reranker = Reranker()
 
 
@@ -176,7 +159,6 @@ if "history" not in st.session_state:
 # =========================
 
 if summary:
-
     with st.expander("📄 Document Insights", expanded=True):
         st.markdown(summary)
 
@@ -188,9 +170,7 @@ if summary:
 chat_container = st.container()
 
 with chat_container:
-
     for message in st.session_state.messages:
-
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
@@ -220,51 +200,41 @@ if query:
         with st.chat_message("assistant"):
 
             placeholder = st.empty()
-
             placeholder.markdown("🤖 Generating answer...")
 
             start_time = time.time()
 
             retrieved_docs = retriever.retrieve(query, k=10)
-
             docs = reranker.rerank(query, retrieved_docs, top_k=3)
 
             response = ""
 
-            for token in stream_answer(query, docs, st.session_state.history):
-
+            for token in stream_answer(query, docs, st.session_state.history, selected_model):
                 response += token
                 placeholder.markdown(response + "▌")
 
             placeholder.markdown(response)
 
             end_time = time.time()
-
             response_time = round(end_time - start_time, 2)
-
             token_count = len(response.split())
-
             tokens_per_sec = round(token_count / response_time, 2) if response_time > 0 else 0
-
 
             st.session_state.history.append(f"User: {query}")
             st.session_state.history.append(f"Assistant: {response}")
 
-
             sources = extract_sources(docs)
 
             if sources:
-
                 st.markdown("**Sources:**")
-
                 for file_name, page in sources:
                     st.markdown(f"- {file_name} — Page {page}")
 
             st.markdown("---")
-
             st.markdown(f"⏱ **Response Time:** {response_time} seconds")
             st.markdown(f"🔢 **Tokens Generated:** {token_count}")
             st.markdown(f"⚡ **Tokens/sec:** {tokens_per_sec}")
+            st.markdown(f"🤖 **Model:** {selected_model_name}")
 
         st.session_state.messages.append(
             {"role": "assistant", "content": response}
@@ -278,30 +248,24 @@ if query:
 if query:
 
     with st.expander("📚 Context Sent to LLM"):
-
         for i, doc in enumerate(docs):
-
             st.markdown(f"**Chunk {i+1}**")
             st.markdown(doc.page_content)
             st.markdown("---")
 
-
     with st.expander("🔎 Retrieval Debug Panel"):
 
         st.subheader("Vector Search Results")
-
         for doc in retriever.last_vector_results:
             st.markdown(doc.page_content[:300])
             st.markdown("---")
 
         st.subheader("BM25 Keyword Results")
-
         for doc in retriever.last_bm25_results:
             st.markdown(doc.page_content[:300])
             st.markdown("---")
 
         st.subheader("Final Hybrid Results")
-
         for doc in retriever.last_combined_results:
             st.markdown(doc.page_content[:300])
             st.markdown("---")
@@ -312,8 +276,7 @@ if query:
 # =========================
 
 st.markdown("---")
-
 st.markdown(
-    "<center style='color:gray'>Advanced RAG Assistant • Built with Streamlit, LangChain, FAISS, Sentence Transformers, and Ollama</center>",
+    "<center style='color:gray'>Advanced RAG Assistant • Built with Streamlit, LangChain, FAISS, Sentence Transformers, and Groq</center>",
     unsafe_allow_html=True
 )
